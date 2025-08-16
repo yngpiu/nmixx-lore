@@ -197,6 +197,7 @@ function App() {
               alt={`NMIXX Lore ${imageNumber}`}
               className="story-image"
               onLoad={() => handleImageLoad(imageNumber)}
+              loading="lazy"
             />
           </div>
         ))}
