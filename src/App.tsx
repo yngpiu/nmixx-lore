@@ -7,36 +7,15 @@ const images = Array.from({ length: 29 }, (_, i) => i + 1);
 function App() {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [headerVisible, setHeaderVisible] = useState(true);
 
-  // Scroll progress tracking and header auto-hide
+  // Scroll progress tracking
   useEffect(() => {
-    let lastScrollY = 0;
-    let ticking = false;
-
     const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const scrollTop = window.pageYOffset;
-          const docHeight =
-            document.documentElement.scrollHeight - window.innerHeight;
-          const progress = (scrollTop / docHeight) * 100;
-          setScrollProgress(progress);
-
-          // Auto-hide header logic
-          if (scrollTop > lastScrollY && scrollTop > 80) {
-            // Scrolling down & past 80px
-            setHeaderVisible(false);
-          } else if (scrollTop < lastScrollY || scrollTop <= 80) {
-            // Scrolling up or near top
-            setHeaderVisible(true);
-          }
-
-          lastScrollY = scrollTop;
-          ticking = false;
-        });
-        ticking = true;
-      }
+      const scrollTop = window.pageYOffset;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
+      setScrollProgress(progress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -84,11 +63,6 @@ function App() {
           style={{ width: `${scrollProgress}%` }}
         ></div>
       </div>
-
-      {/* Header Section */}
-      <header className={`header ${!headerVisible ? 'hidden' : ''}`}>
-        <h1>Thế giới quan của NMIXX</h1>
-      </header>
 
       {/* Story Container */}
       <main className="story-container">
