@@ -9,6 +9,7 @@ function App() {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
   const lenisRef = useRef<Lenis | null>(null);
 
   // Initialize Lenis
@@ -89,52 +90,69 @@ function App() {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   };
 
-  const scrollToImage = useCallback((index: number) => {
-    const targetElement = document.querySelector(
-      `[data-index="${index}"]`
-    ) as HTMLElement;
-    if (targetElement) {
-      const elementTop = targetElement.offsetTop;
-      const elementHeight = targetElement.offsetHeight;
-      const windowHeight = window.innerHeight;
+  const scrollToImage = useCallback(
+    (index: number) => {
+      // Prevent multiple navigation calls
+      if (isNavigating) return;
 
-      // Calculate position to center the image
-      const centerPosition = elementTop - windowHeight / 2 + elementHeight / 2;
-      const targetPosition = Math.max(0, centerPosition);
+      setIsNavigating(true);
 
-      // Use Lenis for smooth scrolling if available
-      if (lenisRef.current) {
-        lenisRef.current.scrollTo(targetPosition, {
-          duration: 1.5,
-          easing: (t) => 1 - Math.pow(1 - t, 3),
-        });
+      const targetElement = document.querySelector(
+        `[data-index="${index}"]`
+      ) as HTMLElement;
+      if (targetElement) {
+        const elementTop = targetElement.offsetTop;
+        const elementHeight = targetElement.offsetHeight;
+        const windowHeight = window.innerHeight;
+
+        // Calculate position to center the image
+        const centerPosition =
+          elementTop - windowHeight / 2 + elementHeight / 2;
+        const targetPosition = Math.max(0, centerPosition);
+
+        // Use Lenis for smooth scrolling if available
+        if (lenisRef.current) {
+          lenisRef.current.scrollTo(targetPosition, {
+            duration: 1.5,
+            easing: (t) => 1 - Math.pow(1 - t, 3),
+          });
+
+          // Reset navigation flag after animation completes
+          setTimeout(() => setIsNavigating(false), 1600);
+        } else {
+          // Fallback to custom smooth scroll
+          const startPosition = window.pageYOffset;
+          const distance = targetPosition - startPosition;
+          const duration = 800; // ms
+          let startTime: number | null = null;
+
+          const animateScroll = (currentTime: number) => {
+            if (startTime === null) startTime = currentTime;
+            const timeElapsed = currentTime - startTime;
+            const progress = Math.min(timeElapsed / duration, 1);
+
+            // Apply easing function
+            const easedProgress = easeInOutCubic(progress);
+            const currentPosition = startPosition + distance * easedProgress;
+
+            window.scrollTo(0, currentPosition);
+
+            if (progress < 1) {
+              requestAnimationFrame(animateScroll);
+            } else {
+              // Reset navigation flag when animation completes
+              setIsNavigating(false);
+            }
+          };
+
+          requestAnimationFrame(animateScroll);
+        }
       } else {
-        // Fallback to custom smooth scroll
-        const startPosition = window.pageYOffset;
-        const distance = targetPosition - startPosition;
-        const duration = 800; // ms
-        let startTime: number | null = null;
-
-        const animateScroll = (currentTime: number) => {
-          if (startTime === null) startTime = currentTime;
-          const timeElapsed = currentTime - startTime;
-          const progress = Math.min(timeElapsed / duration, 1);
-
-          // Apply easing function
-          const easedProgress = easeInOutCubic(progress);
-          const currentPosition = startPosition + distance * easedProgress;
-
-          window.scrollTo(0, currentPosition);
-
-          if (progress < 1) {
-            requestAnimationFrame(animateScroll);
-          }
-        };
-
-        requestAnimationFrame(animateScroll);
+        setIsNavigating(false);
       }
-    }
-  }, []);
+    },
+    [isNavigating]
+  );
 
   const goToPreviousImage = () => {
     if (currentImageIndex > 0) {
@@ -207,19 +225,23 @@ function App() {
       <div className="nav-buttons">
         <button
           className={`nav-btn nav-btn-up ${
-            currentImageIndex === 0 ? 'disabled' : ''
+            currentImageIndex === 0 || isNavigating ? 'disabled' : ''
           }`}
           onClick={goToPreviousImage}
-          disabled={currentImageIndex === 0}
+          onTouchStart={(e) => e.preventDefault()}
+          disabled={currentImageIndex === 0 || isNavigating}
         >
           ↑
         </button>
         <button
           className={`nav-btn nav-btn-down ${
-            currentImageIndex === images.length - 1 ? 'disabled' : ''
+            currentImageIndex === images.length - 1 || isNavigating
+              ? 'disabled'
+              : ''
           }`}
           onClick={goToNextImage}
-          disabled={currentImageIndex === images.length - 1}
+          onTouchStart={(e) => e.preventDefault()}
+          disabled={currentImageIndex === images.length - 1 || isNavigating}
         >
           ↓
         </button>
