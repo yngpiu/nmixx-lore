@@ -87,6 +87,8 @@ html.lenis {
   display: block;
   margin: 0 auto;
   object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
 }
 
 /* Loading State */
@@ -234,6 +236,8 @@ html.lenis {
     width: 100%;
     height: auto;
     max-width: 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
   }
 
   .story-item.loading .story-image {

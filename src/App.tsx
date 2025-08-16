@@ -82,6 +82,52 @@ function App() {
     return () => observer.disconnect();
   }, [loadedImages]);
 
+  // Scroll-driven scaling effect
+  useEffect(() => {
+    let ticking = false;
+
+    const updateScaling = () => {
+      const viewportCenter = window.innerHeight / 2 + window.pageYOffset;
+      const storyItems = document.querySelectorAll('.story-item');
+
+      storyItems.forEach((item) => {
+        const element = item as HTMLElement;
+        const rect = element.getBoundingClientRect();
+        const elementCenter = rect.top + window.pageYOffset + rect.height / 2;
+
+        // Calculate distance from viewport center
+        const distance = Math.abs(viewportCenter - elementCenter);
+        const maxDistance = window.innerHeight;
+
+        // Calculate scale based on distance (closer to center = larger scale)
+        const normalizedDistance = Math.min(distance / maxDistance, 1);
+        const scale = 1 - normalizedDistance * 0.2; // Scale from 0.8 to 1
+
+        const imageElement = element.querySelector(
+          '.story-image'
+        ) as HTMLElement;
+        if (imageElement) {
+          imageElement.style.transform = `scale(${Math.max(scale, 0.8)})`;
+        }
+      });
+
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(updateScaling);
+        ticking = true;
+      }
+    };
+
+    // Initial call
+    updateScaling();
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleImageLoad = (imageNumber: number) => {
     setLoadedImages((prev) => new Set([...prev, imageNumber]));
   };
