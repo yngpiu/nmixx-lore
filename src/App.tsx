@@ -6,10 +6,10 @@ import './App.css';
 const images = Array.from({ length: 29 }, (_, i) => i + 1);
 
 function App() {
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const lenisRef = useRef<Lenis | null>(null);
 
   // Initialize Lenis
@@ -58,18 +58,26 @@ function App() {
   // Intersection Observer for fade-in animation and current image tracking
   useEffect(() => {
     const observerOptions = {
-      threshold: 0.5,
-      rootMargin: '0px',
+      threshold: 0.1, // Trigger when only 10% of image is visible
+      rootMargin: '100px', // Start animation 100px before entering viewport
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const target = entry.target as HTMLElement;
-          target.classList.add('visible');
+          const imageIndex = parseInt(target.dataset.index || '0');
+          const imageNumber = images[imageIndex];
+
+          // Only show if image is loaded
+          if (loadedImages.has(imageNumber)) {
+            target.classList.add('visible');
+          } else {
+            // Mark as pending to show when image loads
+            target.dataset.pendingVisible = 'true';
+          }
 
           // Update current image index
-          const imageIndex = parseInt(target.dataset.index || '0');
           setCurrentImageIndex(imageIndex);
         }
       });
@@ -77,7 +85,13 @@ function App() {
 
     // Observe all story items
     const storyItems = document.querySelectorAll('.story-item');
-    storyItems.forEach((item) => observer.observe(item));
+    storyItems.forEach((item, index) => {
+      observer.observe(item);
+      // Make first image visible immediately if loaded
+      if (index === 0 && loadedImages.has(images[0])) {
+        (item as HTMLElement).classList.add('visible');
+      }
+    });
 
     return () => observer.disconnect();
   }, [loadedImages]);
@@ -128,8 +142,30 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle image load
   const handleImageLoad = (imageNumber: number) => {
-    setLoadedImages((prev) => new Set([...prev, imageNumber]));
+    setLoadedImages((prev) => {
+      const newSet = new Set([...prev, imageNumber]);
+
+      // Check if any pending items should be made visible
+      setTimeout(() => {
+        const pendingItems = document.querySelectorAll(
+          '[data-pending-visible="true"]'
+        );
+        pendingItems.forEach((item) => {
+          const element = item as HTMLElement;
+          const imageIndex = parseInt(element.dataset.index || '0');
+          const itemImageNumber = images[imageIndex];
+
+          if (newSet.has(itemImageNumber)) {
+            element.classList.add('visible');
+            element.removeAttribute('data-pending-visible');
+          }
+        });
+      }, 50);
+
+      return newSet;
+    });
   };
 
   const easeInOutCubic = (t: number): number => {
@@ -249,18 +285,11 @@ function App() {
       {/* Story Container */}
       <main className="story-container">
         {images.map((imageNumber, index) => (
-          <div
-            key={imageNumber}
-            className={`story-item ${
-              loadedImages.has(imageNumber) ? '' : 'loading'
-            }`}
-            data-index={index}
-          >
+          <div key={imageNumber} className="story-item" data-index={index}>
             <img
               src={`/lore/${imageNumber}.png`}
               alt={`NMIXX Lore ${imageNumber}`}
               className="story-image"
-              loading="lazy"
               onLoad={() => handleImageLoad(imageNumber)}
             />
           </div>
