@@ -1,0 +1,205 @@
+/* NMIXX Lore Story - Simple Vertical Layout */
+
+/* App Container */
+.app {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  position: relative;
+}
+
+/* Top and Bottom Gradient Overlays */
+.gradient-overlay-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 25vh;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+  z-index: 50;
+  pointer-events: none;
+}
+
+.gradient-overlay-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 25vh;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Header Section */
+.header {
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(
+    135deg,
+    #667eea 0%,
+    #764ba2 25%,
+    #ff6b9d 50%,
+    #c471ed 75%,
+    #12c2e9 100%
+  );
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header.hidden {
+  transform: translateY(-100%);
+}
+
+.header h1 {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Story Container */
+.story-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem 1rem;
+  padding-top: 5rem; /* Account for fixed header */
+}
+
+/* Image Items */
+.story-item {
+  margin-bottom: 1rem;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.story-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.story-image {
+  width: auto;
+  height: 80vh;
+  max-width: 100%;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+/* Loading State */
+.story-item.loading .story-image {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  min-height: 80vh;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Scroll Progress */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 111;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b9d, #c471ed, #12c2e9);
+  width: 0%;
+  transition: width 0.1s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.4rem 0.8rem;
+  }
+
+  .story-container {
+    padding: 1rem 0.5rem;
+    padding-top: 4rem;
+  }
+
+  .story-item {
+    margin-bottom: 0.5rem;
+  }
+
+  .story-image {
+    border-radius: 10px;
+    height: 70vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .header h1 {
+    font-size: clamp(1rem, 4vw, 1.5rem);
+  }
+
+  .story-container {
+    padding: 0.5rem 0.25rem;
+    padding-top: 3.5rem;
+  }
+
+  .story-item {
+    margin-bottom: 0.2rem;
+  }
+
+  .story-image {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+
+  .story-item.loading .story-image {
+    min-height: 200px;
+    width: 100%;
+    height: 200px;
+  }
+}
