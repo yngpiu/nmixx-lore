@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import './App.css';
 
@@ -7,16 +7,16 @@ const images = Array.from({ length: 29 }, (_, i) => i + 1);
 
 function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const lenisRef = useRef<Lenis | null>(null);
 
-  // Initialize Lenis
+  // Optimized Lenis initialization
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.0, // Faster for better responsiveness
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      wheelMultiplier: 1.2,
+      touchMultiplier: 1.5,
     });
 
     lenisRef.current = lenis;
@@ -76,9 +76,6 @@ function App() {
             // Mark as pending to show when image loads
             target.dataset.pendingVisible = 'true';
           }
-
-          // Update current image index
-          setCurrentImageIndex(imageIndex);
         }
       });
     }, observerOptions);
@@ -96,32 +93,41 @@ function App() {
     return () => observer.disconnect();
   }, [loadedImages]);
 
-  // Scroll-driven scaling effect
+  // Optimized scroll-driven scaling effect
   useEffect(() => {
     let ticking = false;
+    let lastScrollY = window.pageYOffset;
 
     const updateScaling = () => {
-      const viewportCenter = window.innerHeight / 2 + window.pageYOffset;
-      const storyItems = document.querySelectorAll('.story-item');
+      const currentScrollY = window.pageYOffset;
+      // Only update if scroll changed significantly (performance optimization)
+      if (Math.abs(currentScrollY - lastScrollY) < 5) {
+        ticking = false;
+        return;
+      }
+      lastScrollY = currentScrollY;
+
+      const viewportCenter = window.innerHeight / 2 + currentScrollY;
+      const storyItems = document.querySelectorAll('.story-item.visible');
 
       storyItems.forEach((item) => {
         const element = item as HTMLElement;
         const rect = element.getBoundingClientRect();
-        const elementCenter = rect.top + window.pageYOffset + rect.height / 2;
+        const elementCenter = rect.top + currentScrollY + rect.height / 2;
 
         // Calculate distance from viewport center
         const distance = Math.abs(viewportCenter - elementCenter);
-        const maxDistance = window.innerHeight;
+        const maxDistance = window.innerHeight * 0.8; // Reduced range for better performance
 
         // Calculate scale based on distance (closer to center = larger scale)
         const normalizedDistance = Math.min(distance / maxDistance, 1);
-        const scale = 1 - normalizedDistance * 0.2; // Scale from 0.8 to 1
+        const scale = Math.max(0.85, 1 - normalizedDistance * 0.15); // Optimized range
 
         const imageElement = element.querySelector(
           '.story-image'
         ) as HTMLElement;
         if (imageElement) {
-          imageElement.style.transform = `scale(${Math.max(scale, 0.8)})`;
+          imageElement.style.transform = `scale(${scale})`;
         }
       });
 
@@ -136,7 +142,7 @@ function App() {
     };
 
     // Initial call
-    updateScaling();
+    requestAnimationFrame(updateScaling);
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -168,106 +174,6 @@ function App() {
     });
   };
 
-  const easeInOutCubic = (t: number): number => {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  };
-
-  const scrollToImage = useCallback(
-    (index: number) => {
-      // Prevent multiple navigation calls
-      if (isNavigating) return;
-
-      setIsNavigating(true);
-
-      const targetElement = document.querySelector(
-        `[data-index="${index}"]`
-      ) as HTMLElement;
-      if (targetElement) {
-        const elementTop = targetElement.offsetTop;
-        const elementHeight = targetElement.offsetHeight;
-        const windowHeight = window.innerHeight;
-
-        // Calculate position to center the image
-        const centerPosition =
-          elementTop - windowHeight / 2 + elementHeight / 2;
-        const targetPosition = Math.max(0, centerPosition);
-
-        // Use Lenis for smooth scrolling if available
-        if (lenisRef.current) {
-          lenisRef.current.scrollTo(targetPosition, {
-            duration: 1.5,
-            easing: (t) => 1 - Math.pow(1 - t, 3),
-          });
-
-          // Reset navigation flag after animation completes
-          setTimeout(() => setIsNavigating(false), 1600);
-        } else {
-          // Fallback to custom smooth scroll
-          const startPosition = window.pageYOffset;
-          const distance = targetPosition - startPosition;
-          const duration = 800; // ms
-          let startTime: number | null = null;
-
-          const animateScroll = (currentTime: number) => {
-            if (startTime === null) startTime = currentTime;
-            const timeElapsed = currentTime - startTime;
-            const progress = Math.min(timeElapsed / duration, 1);
-
-            // Apply easing function
-            const easedProgress = easeInOutCubic(progress);
-            const currentPosition = startPosition + distance * easedProgress;
-
-            window.scrollTo(0, currentPosition);
-
-            if (progress < 1) {
-              requestAnimationFrame(animateScroll);
-            } else {
-              // Reset navigation flag when animation completes
-              setIsNavigating(false);
-            }
-          };
-
-          requestAnimationFrame(animateScroll);
-        }
-      } else {
-        setIsNavigating(false);
-      }
-    },
-    [isNavigating]
-  );
-
-  const goToPreviousImage = () => {
-    if (currentImageIndex > 0) {
-      scrollToImage(currentImageIndex - 1);
-    }
-  };
-
-  const goToNextImage = () => {
-    if (currentImageIndex < images.length - 1) {
-      scrollToImage(currentImageIndex + 1);
-    }
-  };
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-        event.preventDefault();
-        if (currentImageIndex > 0) {
-          scrollToImage(currentImageIndex - 1);
-        }
-      } else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-        event.preventDefault();
-        if (currentImageIndex < images.length - 1) {
-          scrollToImage(currentImageIndex + 1);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentImageIndex, scrollToImage]);
-
   return (
     <div className="app">
       {/* Gradient Overlays */}
@@ -295,32 +201,6 @@ function App() {
           </div>
         ))}
       </main>
-
-      {/* Navigation Buttons */}
-      <div className="nav-buttons">
-        <button
-          className={`nav-btn nav-btn-up ${
-            currentImageIndex === 0 || isNavigating ? 'disabled' : ''
-          }`}
-          onClick={goToPreviousImage}
-          onTouchStart={(e) => e.preventDefault()}
-          disabled={currentImageIndex === 0 || isNavigating}
-        >
-          ↑
-        </button>
-        <button
-          className={`nav-btn nav-btn-down ${
-            currentImageIndex === images.length - 1 || isNavigating
-              ? 'disabled'
-              : ''
-          }`}
-          onClick={goToNextImage}
-          onTouchStart={(e) => e.preventDefault()}
-          disabled={currentImageIndex === images.length - 1 || isNavigating}
-        >
-          ↓
-        </button>
-      </div>
     </div>
   );
 }
