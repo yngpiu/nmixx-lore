@@ -8,6 +8,19 @@
   position: relative;
 }
 
+/* Lenis smooth scroll overrides */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
 /* Top and Bottom Gradient Overlays */
 .gradient-overlay-top {
   position: fixed;
@@ -116,6 +129,65 @@
   transition: width 0.1s ease;
 }
 
+/* Navigation Buttons */
+.nav-buttons {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 60;
+  user-select: none;
+}
+
+.nav-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.nav-btn:hover:not(.disabled) {
+  background: rgba(255, 107, 157, 0.3);
+  border-color: rgba(255, 107, 157, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 6px 30px rgba(255, 107, 157, 0.4);
+}
+
+.nav-btn:active:not(.disabled) {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+.nav-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn-up {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.nav-btn-down {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .story-container {
@@ -129,6 +201,17 @@
   .story-image {
     border-radius: 10px;
     height: 70vh;
+  }
+
+  .nav-buttons {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+
+  .nav-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
   }
 }
 
@@ -151,5 +234,17 @@
     min-height: 200px;
     width: 100%;
     height: 200px;
+  }
+
+  .nav-buttons {
+    bottom: 1rem;
+    right: 1rem;
+    gap: 0.3rem;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
 }
